@@ -91,27 +91,29 @@ def test_invalid_pdf_handling():
 # Test 5: Test session state management
 def test_session_state_management():
     """Test that the session state is managed correctly."""
-    # First test with no messages
-    with patch('streamlit.chat_input', return_value=None):
+    # First test with no messages: start from a clean session_state
+    with patch.dict(st.session_state, {}, clear=True), \
+         patch('streamlit.chat_input', return_value=None):
         gemini_chat.main()
         assert 'messages' in st.session_state
         assert len(st.session_state.messages) == 0
-    
-    # Then test adding a message
-    with patch('streamlit.chat_input', return_value="Test message"), \
+
+    # Then test adding a message: again start from a clean session_state
+    with patch.dict(st.session_state, {}, clear=True), \
+         patch('streamlit.chat_input', return_value="Test message"), \
          patch('streamlit.chat_message'), \
          patch('streamlit.markdown'), \
          patch('google.generativeai.GenerativeModel') as mock_model, \
          patch('streamlit.spinner'):
-        
+
         # Mock the model response
         mock_response = MagicMock()
         mock_response.text = "Test response"
         mock_model.return_value.generate_content.return_value = mock_response
-        
+
         # Initialize the app
         gemini_chat.main()
-        
+
         # Check that the message was added to the session state
         assert len(st.session_state.messages) == 2  # User message + AI response
         assert st.session_state.messages[0]["content"] == "Test message"
